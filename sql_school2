@@ -1,0 +1,87 @@
+import sqlite3
+
+def setup_database():
+
+    conn = sqlite3.connect('school.db')
+    cursor = conn.cursor()
+
+    cursor.execute('''CREATE TABLE IF NOT EXISTS countries (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        title TEXT NOT NULL)''')
+
+    countries_data = [('Кыргызстан',), ('Германия',), ('Китай',)]
+    cursor.executemany('INSERT INTO countries (title) VALUES (?)', countries_data)
+
+    cursor.execute('''CREATE TABLE IF NOT EXISTS cities (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        title TEXT NOT NULL,
+                        area REAL DEFAULT 0,
+                        country_id INTEGER,
+                        FOREIGN KEY (country_id) REFERENCES countries(id))''')
+
+    cities_data = [('Бишкек', 123.45, 1),
+                   ('Ош', 90.2, 1),
+                   ('Берлин', 891.85, 2),
+                   ('Пекин', 1641.8, 3),
+                   ('Москва', 2561.0, 4), 
+                   ('Лондон', 1572.0, 5),  
+                   ('Нью-Йорк', 1214.0, 6)] 
+    cursor.executemany('INSERT INTO cities (title, area, country_id) VALUES (?, ?, ?)', cities_data)
+
+    cursor.execute('''CREATE TABLE IF NOT EXISTS students (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        first_name TEXT NOT NULL,
+                        last_name TEXT NOT NULL,
+                        city_id INTEGER,
+                        FOREIGN KEY (city_id) REFERENCES cities(id))''')
+    students_data = [('Иван', 'Иванов', 1),
+                     ('Петр', 'Петров', 2),
+                     ('Мария', 'Сидорова', 3),
+                     ('Александр', 'Смирнов', 4),  
+                     ('Екатерина', 'Иванова', 5),  
+                     ('Андрей', 'Петров', 6),  
+                     ('Светлана', 'Сидорова', 7),  
+                     ('Дмитрий', 'Смирнов', 1),
+                     ('Ольга', 'Иванова', 2),  
+                     ('Игорь', 'Петров', 3),  
+                     ('Наталья', 'Сидорова', 4),  
+                     ('Владимир', 'Смирнов', 5),  
+                     ('Татьяна', 'Иванова', 6),  
+                     ('Сергей', 'Петров', 7), 
+                     ('Елена', 'Сидорова', 1),  
+                     ('Анна', 'Смирнова', 2),
+                    ]
+    cursor.executemany('INSERT INTO students (first_name, last_name, city_id) VALUES (?, ?, ?)', students_data)
+
+    conn.commit()
+    conn.close()
+
+def display_students_by_city():
+    conn = sqlite3.connect('school.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id, title FROM cities")
+    cities = cursor.fetchall()
+
+    print("Вы можете отобразить список учеников по выбранному id города из перечня городов ниже, для выхода из программы введите 0:")
+    for city in cities:
+        print(f"{city[0]}. {city[1]}")
+
+    while True:
+        city_id = input("Введите id города: ")
+        if city_id == '0':
+            break
+        cursor.execute('''SELECT students.first_name, students.last_name, countries.title, cities.title, cities.area
+                          FROM students
+                          JOIN cities ON students.city_id = cities.id
+                          JOIN countries ON cities.country_id = countries.id
+                          WHERE cities.id = ?''', (city_id,))
+        students = cursor.fetchall()
+        print("Имя\t\tФамилия\t\tСтрана\t\tГород\t\tПлощадь города")
+        for student in students:
+            print(f"{student[0]}\t\t{student[1]}\t\t{student[2]}\t\t{student[3]}\t\t{student[4]}")
+
+    conn.close()
+
+setup_database()
+display_students_by_city()
