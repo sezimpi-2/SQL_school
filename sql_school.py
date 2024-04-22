@@ -1,3 +1,4 @@
+
 import sqlite3
 
 def setup_database():
@@ -19,17 +20,15 @@ def setup_database():
                         country_id INTEGER,
                         FOREIGN KEY (country_id) REFERENCES countries(id))''')
 
-   
     cities_data = [('Бишкек', 123.45, 1),
-                   ('Ош', 90.2, 2),
-                   ('Берлин', 891.85, 3),
-                   ('Пекин', 1641.8, 4),
-                   ('Москва', 2561.0, 5), 
-                   ('Лондон', 1572.0, 7),  
-                   ('Нью-Йорк', 1214.0, 7)] 
+                   ('Ош', 90.2, 1),
+                   ('Берлин', 891.85, 2),
+                   ('Пекин', 1641.8, 3),
+                   ('Москва', 2561.0, 4), 
+                   ('Лондон', 1572.0, 5),  
+                   ('Нью-Йорк', 1214.0, 6)] 
     cursor.executemany('INSERT INTO cities (title, area, country_id) VALUES (?, ?, ?)', cities_data)
 
-   
     cursor.execute('''CREATE TABLE IF NOT EXISTS students (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         first_name TEXT NOT NULL,
@@ -55,8 +54,35 @@ def setup_database():
                     ]
     cursor.executemany('INSERT INTO students (first_name, last_name, city_id) VALUES (?, ?, ?)', students_data)
 
- 
     conn.commit()
     conn.close()
 
+def display_students_by_city():
+    conn = sqlite3.connect('school.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id, title FROM cities")
+    cities = cursor.fetchall()
+
+    print("Вы можете отобразить список учеников по выбранному id города из перечня городов ниже, для выхода из программы введите 0:")
+    for city in cities:
+        print(f"{city[0]}. {city[1]}")
+
+    while True:
+        city_id = input("Введите id города: ")
+        if city_id == '0':
+            break
+        cursor.execute('''SELECT students.first_name, students.last_name, countries.title, cities.title, cities.area
+                          FROM students
+                          JOIN cities ON students.city_id = cities.id
+                          JOIN countries ON cities.country_id = countries.id
+                          WHERE cities.id = ?''', (city_id,))
+        students = cursor.fetchall()
+        print("Имя\t\tФамилия\t\tСтрана\t\tГород\t\tПлощадь города")
+        for student in students:
+            print(f"{student[0]}\t\t{student[1]}\t\t{student[2]}\t\t{student[3]}\t\t{student[4]}")
+
+    conn.close()
+
 setup_database()
+display_students_by_city()
